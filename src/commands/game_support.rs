@@ -5,7 +5,7 @@ use crate::{Context, Error};
 pub async fn game_support(ctx: Context<'_>,
     #[description = "Game Name"] game_name: Option<String>) -> Result<(), Error> {
     // String containing default response
-    let mut message = String::from("https://whisky-app.github.io/whisky-book/game-support/");
+    let mut message = String::from("https://docs.getwhisky.app/game-support/");
 
     if game_name == None {
         ctx.reply(message).await?;
@@ -22,31 +22,44 @@ pub async fn game_support(ctx: Context<'_>,
 
                 let resp = reqwest::get(message.clone()).await?;
 
-                match resp.status() {
-                    StatusCode::OK => {
-                        if let Context::Prefix(prefix) = ctx {
-                            match prefix.msg.clone().referenced_message {
-                                Some(parent) => {
-                                    parent.reply(&ctx, message).await?;
-                                    prefix.msg.delete(ctx).await?;
-                                },
-                                None => {
-                                    ctx.reply(message).await?;
-                                }
+            match resp.status() {
+                StatusCode::OK => {
+                    if let Context::Prefix(prefix) = ctx {
+                        match prefix.msg.clone().referenced_message {
+                            Some(parent) => {
+                                parent.reply(&ctx, message).await?;
+                                prefix.msg.delete(ctx).await?;
+                            },
+                            None => {
+                                ctx.reply(message).await?;
                             }
-                        } else {
-                            ctx.reply(message).await?;
                         }
+                    } else {
+                        ctx.reply(message).await?;
+                    }
+                },
+                StatusCode::NOT_FOUND => {
+                    ctx.reply("Hmm, seems that game isn't in our docs.").await?;
+                },
+                code => {
+                    ctx.reply(format!("Hmm, seems I'm having trouble connecting to docs. ({code})"), ).await?;
+                }
+            }
+        },
+        None => {
+            if let Context::Prefix(prefix) = ctx {
+                match prefix.msg.clone().referenced_message {
+                    Some(parent) => {
+                        parent.reply(&ctx, message).await?;
+                        prefix.msg.delete(ctx).await?;
                     },
-                    StatusCode::NOT_FOUND => {
-                        ctx.reply("Hmm, seems that game isn't in our docs.").await?;
-                    },
-                    code => {
-                        ctx.reply(format!("Hmm, seems I'm having trouble connecting to docs. ({code})"), ).await?;
+                    None => {
+                        ctx.reply(message).await?;
                     }
                 }
-            },
-            None => {}
+            } else {
+                ctx.reply(message).await?;
+            }
         }
     }
     
