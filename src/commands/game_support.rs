@@ -7,26 +7,25 @@ pub async fn game_support(ctx: Context<'_>,
     // String containing default response
     let mut message = String::from("https://docs.getwhisky.app/game-support/");
 
-    if game_name == None {
-        ctx.reply(message).await?;
-    }
-    else {
-        match game_name {
-            Some(name) => {
-                let esc_name = name
-                    .trim()
-                    .replace(" ", "-")
-                    .chars().filter(|b| b.is_alphanumeric() || *b == '-').collect::<String>()
-                    .to_lowercase();
-                message.push_str(&esc_name);
+    match game_name {
+        Some(name) => {
+            let esc_name = name
+                .trim()
+                .replace(" ", "-")
+                .chars().filter(|b| b.is_alphanumeric() || *b == '-').collect::<String>()
+                .to_lowercase();
+            message.push_str(&esc_name);
 
-                let resp = reqwest::get(message.clone()).await?;
+            let resp = reqwest::get(message.clone()).await?;
 
             match resp.status() {
                 StatusCode::OK => {
                     if let Context::Prefix(prefix) = ctx {
                         match prefix.msg.clone().referenced_message {
                             Some(parent) => {
+                                message += "\n\nThis command was invoked by ";
+                                message += ctx.author().to_string().as_str();
+                                
                                 parent.reply(&ctx, message).await?;
                                 prefix.msg.delete(ctx).await?;
                             },
@@ -50,6 +49,9 @@ pub async fn game_support(ctx: Context<'_>,
             if let Context::Prefix(prefix) = ctx {
                 match prefix.msg.clone().referenced_message {
                     Some(parent) => {
+                        message += "\n\nThis command was invoked by ";
+                        message += ctx.author().to_string().as_str();
+        
                         parent.reply(&ctx, message).await?;
                         prefix.msg.delete(ctx).await?;
                     },
@@ -62,6 +64,6 @@ pub async fn game_support(ctx: Context<'_>,
             }
         }
     }
-    
+
     Ok(())
 }
